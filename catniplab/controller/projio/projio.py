@@ -1,9 +1,9 @@
-__author__ = 'lk'
+__author__ = 'lkkim'
 
 import xlsxwriter as writer
 import os
 import time
-from NIPSimulator import SimTag
+# from simagent import Sim
 from mysql import connector
 
 directory = "D:\\Document\\niplab\\LIG"
@@ -20,8 +20,7 @@ timestamp = time.time()
 
 
 def load_data():
-    path = 'D:\\Document\\niplab\\LIG\\july\\source\\1000\\inputdata'
-    with open(os.path.join(path, dataname + '.csv'), 'r') as merge:
+    with open(os.path.join('source/emitter50.csv'), 'r') as merge:
         data, target = [], []
         for line in merge.readlines():
             line = line.split(',')
@@ -34,7 +33,7 @@ def load_data():
 
 def import_data():
     data, target = [], []
-    conn = connector.connect(host='221.153.219.220', port='8806', user='niplab', password='qwqw`12', database='LIG')
+    conn = connector.connect(host='112.170.132.184', port='8806', user='niplab', password='qwqw`12', database='LIG')
     cursor = conn.cursor()
     # query = "SELECT * from july_originbeam_dTOA"
     query = "SELECT * from " + dataname
@@ -143,38 +142,38 @@ def compound_clfsheet(simulorname: str, statistics: dict, workbook: writer.Workb
     return clf_smry
 
 
-def p_value(cponpst: SimTag):
-    wb = initbook('p-value')
-    header = ['target', 'predict']
-    tgarr = list(set(cponpst.testtarget[0]))
-    tgarr.sort()
-    header.extend(tgarr)
-    for i, pst in enumerate(list(zip(cponpst.testtarget, cponpst.predlist, cponpst.pval_list))):
-        foldtable = []
-        pst = list(zip(*pst))
-        for rowvalues in pst:
-            pvalarr = [[x['target'], x['p-value']] for x in rowvalues[2]['ppdict']]
-            pvalarr.sort(key=lambda x: x[0])
-            pvalarr = [x[1] for x in pvalarr]
-            row = [rowvalues[0], rowvalues[1]]
-            row.extend(pvalarr)
-            foldtable.append(row)
-
-        foldtable = list(zip(*foldtable))
-        temp = []
-        for row, attr in list(zip(foldtable, header)):
-            temprow = [x for x in row]
-            temprow.insert(0, attr)
-            temp.append(temprow)
-        foldtable = temp
-        foldtable = list(zip(*foldtable))
-        # for predict in pval_list:
-        #     predict['ppdict'].sort(key=lambda x: x['target'])
-
-        ws = wb.add_worksheet('fold#%02d' % (i + 1))
-        r, c = 0, 0
-        for line in foldtable:
-            r, c = worksheet_writeline(ws, r, c, line)
-
-    wb.add_worksheet()
-    wb.close()
+# def p_value(cponpst: Sim):
+#     wb = initbook('p-value')
+#     header = ['target', 'predict']
+#     tgarr = list(set(cponpst.testtarget[0]))
+#     tgarr.sort()
+#     header.extend(tgarr)
+#     for i, pst in enumerate(list(zip(cponpst.testtarget, cponpst.predlist, cponpst.pval_list))):
+#         foldtable = []
+#         pst = list(zip(*pst))
+#         for rowvalues in pst:
+#             pvalarr = [[x['target'], x['p-value']] for x in rowvalues[2]['ppdict']]
+#             pvalarr.sort(key=lambda x: x[0])
+#             pvalarr = [x[1] for x in pvalarr]
+#             row = [rowvalues[0], rowvalues[1]]
+#             row.extend(pvalarr)
+#             foldtable.append(row)
+#
+#         foldtable = list(zip(*foldtable))
+#         temp = []
+#         for row, attr in list(zip(foldtable, header)):
+#             temprow = [x for x in row]
+#             temprow.insert(0, attr)
+#             temp.append(temprow)
+#         foldtable = temp
+#         foldtable = list(zip(*foldtable))
+#         # for predict in pval_list:
+#         #     predict['ppdict'].sort(key=lambda x: x['target'])
+#
+#         ws = wb.add_worksheet('fold#%02d' % (i + 1))
+#         r, c = 0, 0
+#         for line in foldtable:
+#             r, c = worksheet_writeline(ws, r, c, line)
+#
+#     wb.add_worksheet()
+#     wb.close()

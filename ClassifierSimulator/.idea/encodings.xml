@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Encoding" defaultCharsetForPropertiesFiles="UTF-8">
-    <file url="file://$PROJECT_DIR$/NIPClassifier.py" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/NIPIO.py" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/NIPSimulator.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/classifier.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/iomanager.py" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/main.py" charset="US-ASCII" />
+    <file url="file://$PROJECT_DIR$/simagent.py" charset="UTF-8" />
     <file url="PROJECT" charset="UTF-8" />
   </component>
 </project>

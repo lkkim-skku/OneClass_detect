@@ -1,44 +1,116 @@
-"""
-Manage Learning simulorule
-"""
-__author__ = 'lk'
-
-from NIPClassifier import CPON
+from model.probaclass_network import CPON
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import metrics
 import numpy as np
 import copy
 
-
 default_fold = 2
 
 
-class ClfSim:
+class LearningManager:
+    """
+    학습에 필요한 자료를 관리합니다.
+    """
+
+    def __init__(self, foldsize=2):
+        self._ocontent, self._otarget = [], []
+        self._lcontent, self._ltarget = [], []
+        self._econtent, self._etarget = [], []
+        self._size = foldsize
+
+    def uploadlearn(self, content, target):
+        """
+        학습 데이터를 업로드합니다.
+
+        :param content: array-like
+        :param target: array-like
+        :return: None
+        """
+        self._lcontent, self._ltarget = content, target
+
+    def uploadexam(self, content, target):
+        """
+        테스트 데이터를 업로드합니다.
+
+        :param content: array-like
+        :param target: array-like
+        :return:
+        """
+        self._econtent, self._etarget = content, target
+
+    def learnsource(self):
+        """
+        학습 데이터를 각 fold마다 yield합니다.
+
+        :yield:
+            learning content: array-like \n
+            learning target: array-like
+        """
+        for lc, lt in zip(self._lcontent, self._ltarget):
+            yield lc, lt
+
+    def examinatesource(self):
+        """
+        테스트 데이터를 각 fold마다 yield합니다.
+
+        :yield:
+            examinate content: array-like \n
+            examinate target: array-like
+       """
+        for ec, et in zip(self._econtent, self._etarget):
+            yield ec, et
+
+    def source(self):
+        """
+        학습 및 테스트 데이터를 각 fold마다 yield합니다.
+
+        :yield:
+            learning content: array-like \n
+            learning target: array-like \n
+            examinate content: array-like \n
+            examinate target: array-like
+        """
+        for lc, lt, ec, et in zip(self._lcontent, self._ltarget, self._econtent, self._etarget):
+            yield lc, lt, ec, et
+    pass
+
+
+class SimAgent:
     """
     Design Purpose
     --------------
     1. fold learning resource
-    2. manage learning simulorules
-    3. manage test result of simulorules
+    2. manage sim
+    3. manage learning data and test data
+    4. manage test result of simulorules
     """
 
     def __init__(self, fold=2):
         self.simtaglist = []  # list of classifier
         self._fold = fold  # size of fold
-        self._data, self._target = None, None
-        self._fold_data, self._fold_target = None, None
-        self._learn_data, self._learn_target = None, None
-        self._pred_data, self._pred_target = None, None
+        self._data, self._target = [], []
+        self._fold_data, self._fold_target = [], []
+        self._learn_data, self._learn_target = [], []
+        self._pred_data, self._pred_target = [], []
+        self._lm = LearningManager(fold)
         self.unknown = False
 
-    def addclf(self, simtag):
+    @property
+    def folder(self):
+        return self._lm
+
+    @folder.setter
+    def folder(self, learningmanager):
+        self._lm = learningmanager
+
+    def addsim(self, simtag):
         """
         add classifier simulorule with passing by object type check.
         :param simtag:
         :return:
         """
-        if isinstance(simtag, SimTag):
+        if isinstance(simtag, Sim):
             self.simtaglist.append(simtag)
         else:
             print('please input SimTag')
@@ -46,11 +118,11 @@ class ClfSim:
 
     def fit(self, data, target):
         """
-        :param data:{array-like, sparce matrix}, shape = [n_samples, n_features]
+        :param data: {array-like, sparce matrix}, shape = [n_samples, n_features]
             For kernel="precomputed", the expected shape of X is
             [n_samples_test, n_samples_train]
 
-        :param target:array-like, shape (n_samples,)
+        :param target: array-like, shape (n_samples,)
             Target values (class labels in classification, real numbers in
             regression)
         :return: ClfSim
@@ -76,14 +148,14 @@ class ClfSim:
             targetbuffer = [x for x in set(target)]
             targetbuffer.sort()
 
-            inputdict = {t:[] for t in targetbuffer}
+            inputdict = {t: [] for t in targetbuffer}
             for d, t in zip(data, target):
                 inputdict[t].append(d)
 
             for i, t in enumerate(targetbuffer):
                 lend = len(inputdict[t])
                 learndata, testdata = inputdict[t][:int(lend / 2)], inputdict[t][int(lend / 2):]
-                targetindex = int(t)  # 구버전용
+                # targetindex = int(t)  # 구버전용
                 # targetindex = int(t[2:])  # 구버전용(EPxxxx로 naming된 data)
                 foldindex_upbound = int(i / 5) + 1
                 # index of second-level array: 0 is training, 1 is testing data or target.
@@ -128,11 +200,12 @@ class ClfSim:
 
                 yield ldata, ltarget, pdata, ptarget
 
-    def learn(self):
+    def simulate(self):
         f = 1
-        for fld, flt, fpd, fpt in self.folding():
+        # for fld, flt, fpd, fpt in self.folding():
+        for ld, lt, ed, et in self._lm.source():
             for simtag in self.simtaglist:
-                simtag.learn(fld, flt, fpd, fpt)
+                simtag.simulate(ld, lt, ed, et)
             print("fold%02d complete" % f)
             f += 1
 
@@ -142,17 +215,31 @@ class ClfSim:
         return self.simtaglist
 
 
-class SimTag:
-    def __init__(self, simulor: None, simulorname: None):
+class Sim:
+    """
+    각 classifier를 simulate하고, 그 결과를 정리합니다.
+    """
+    def __init__(self, simulor, simulorname: str):
         self.simulor, self.simulorname = simulor, simulorname
         self.predlist = []
         self.statistics = {}
         self.pval_list = []
         self.testtarget = []
 
-    def learn(self, fit_data, fit_target, pred_data, pred_target):
+    @staticmethod
+    def factory(clfname):
+        """
+        py:class::`SimAgent`에서 관리할 수 있는 Classifier는 생성해줍니다.
+
+        :param str clfname:
+        :return: new SigAgent
         """
 
+        sim = SVC()
+        return Sim(sim, clfname)
+
+    def simulate(self, fit_data, fit_target, pred_data, pred_target):
+        """
         :param fit_data: data for fit
         :param fit_target: target for fit
         :param pred_data: data for predict
@@ -183,7 +270,6 @@ class SimTag:
         # update_stats(stats, 'pre', metrics.precision_score(pred_target, pred, average='binary', pos_label=pred_target[0]))  # binary
         # update_stats(stats, 'f1m', metrics.f1_score(pred, pred_target, average='binary', pos_label=pred_target[0]))   # bianry
         # update_stats(stats, 'scores', confusion_matrix(pred_target, pred))
-        # update_stats(stats, 'emr', emr_score(pred_target, pred))
         update_stats(stats, 'dtd', detectability(pred_target, pred))
         update_stats(stats, 'unp', unknown_precision(pred_target, pred))
 
@@ -209,15 +295,12 @@ def clffactory(clfname, **kwargs):
     """
     generate classifier by name.
     Options are setted on general.
-    Parameters
-    ----------
-    clfname: string
-        The name of clssifier
-    Returns
-    -------
-    mi: SimTag object
 
+    :param clfname: string,  The name of clssifier
+    :param kwargs: options
+    :return: SimTag object
     """
+
     clfname = clfname.lower()
     clf = None
 
@@ -235,26 +318,25 @@ def clffactory(clfname, **kwargs):
         s = kwargs['bse'] if 'betashape' in kwargs else 'mm'
         b = kwargs['beta'] if 'beta' in kwargs else 'scipy'
         k = kwargs['kernel'] if 'kernel' in kwargs else 'gaussian'
-        t = kwargs['threadable'] if 'threadable' in kwargs else False
-        clf = CPON(cluster=c, beta=b, bse=s, kernel=k, threadable=t)
+        clf = CPON()
         print(clf)
-    mi = SimTag(clf, clfname)
+    mi = Sim(clf, clfname)
 
     return mi
 
 
-def ave_stats(simulator_tag: SimTag):
+def ave_stats(simagent: Sim):
     """
 
     calculate mean of each statistic and append at the end of lsit of statistic.
-    :type simulator_tag: SimTag
-    :param simulator_tag: object SimTag
+
+    :param simagent: object SimTag
     :return: average of statistics
     """
-    for key, struct in simulator_tag.statistics.items():
+    for key, struct in simagent.statistics.items():
         struct['average'] = np.mean(struct['fold'])
 
-    return simulator_tag
+    return simagent
 
 
 form_stats = {'fold': [], 'average': 0.0}  # data structure for statistic measurement
@@ -273,16 +355,6 @@ def update_stats(pedia: dict, key, value):
     pedia[key]['fold'].append(value)
 
     return pedia
-
-
-def emr_score(target, pred):
-    total = len(target)
-    tp = 0
-    for t, p in list(zip(target, pred)):
-        if p == t:
-            tp += 1
-    emr = tp / total
-    return emr
 
 
 def confusion_matrix(target, pred):

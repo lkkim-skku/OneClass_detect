@@ -5,7 +5,6 @@ Submodules
 ----------
 
 .. toctree::
-   :maxdepth:3
 
    ClassifierSimulator.classifier
    ClassifierSimulator.iomanager

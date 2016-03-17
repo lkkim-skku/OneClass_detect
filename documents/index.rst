@@ -6,11 +6,9 @@
 Welcome to ClassifierSimulator's documentation!
 ===============================================
 
-Contents:
-
 .. toctree::
-   :maxdepth: 2
 
+   ClassifierSimulator
 
 
 Indices and tables

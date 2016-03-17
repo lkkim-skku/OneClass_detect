@@ -6,13 +6,8 @@ Y M - 나 을 텍 전 용 메 인
 
 __author__ = 'lk'
 
-from NIPClassifier import BetaFunction
-import NIPIO
-from math import *
-
-
-def ls_logxp1dlog2(x):
-    return log(x + 1, 2)
+from classifier import ProbaClassModel
+import iomanager
 
 
 if __name__ == '__main__':
@@ -23,7 +18,7 @@ if __name__ == '__main__':
     2. beta approximation을 한다.
     3. kstest로 결과 확인.
     """
-    data, target = NIPIO.import_data()
+    data, target = iomanager.import_data()
 
     clf_outputs = {}
 
@@ -43,12 +38,12 @@ if __name__ == '__main__':
             clf_outputs[t].append(d)
 
     ckey = "E0001"
-    bf = BetaFunction(ckey, None, {'bse': 'mm'})
+    bf = ProbaClassModel(ckey, None, {'bse': 'mm'})
     bf.aprx_betashape(clf_outputs[ckey])
     print("{}:".format(ckey), bf['p-value'], "var:", bf['std'])
 
     for ckey in clf_outputs:
-        bf = BetaFunction(ckey, None, {'bse': 'mm'})
+        bf = ProbaClassModel(ckey, None, {'bse': 'mm'})
         bf.aprx_betashape(clf_outputs[ckey])
         # bf.aprx_betashape(clf_outputs[ckey][:100])
         print("{}:".format(ckey), bf['p-value'], "var:", bf['std'])
